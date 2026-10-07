@@ -122,7 +122,6 @@ export default function Login() {
             {isLoading ? 'Conectando...' : 'Google'}
           </button>
         </div>
-        </div>
         
         <p className={styles.disclaimer}>
           Solo mayores de 18 años. Al jugar aceptas nuestras políticas.
