@@ -1,5 +1,5 @@
-import { ActionCtx, FullState, GameDefinition, PlayerId, SetupCtx } from "../../engine/types.ts";
-import { HdnAction, HdnPrivateState, HdnPublicState, HdnSecretState, HdnSettings, WhiteCard, BlackCard } from "./types.ts";
+import type { ActionCtx, FullState, GameDefinition, PlayerId, SetupCtx } from "../../engine/types.ts";
+import type { HdnAction, HdnPrivateState, HdnPublicState, HdnSecretState, HdnSettings, WhiteCard, BlackCard } from "./types.ts";
 
 export const HDN_GAME_ID = 'hora-del-nache';
 
@@ -24,10 +24,12 @@ function shuffle<T>(array: T[], prng: () => number): T[] {
 }
 
 function generateAnonId(prng: () => number): string {
-  return Math.random().toString(36).substring(2, 8); // simple string for UI
+  // Use prng instead of Math.random to remain deterministic
+  return prng().toString(36).substring(2, 8); 
 }
 
-function drawCards<T>(deck: T[], count: number, prng: () => number): { drawn: T[], remaining: T[] } {
+// prng kept for future use if we draw randomly instead of top of deck
+function drawCards<T>(deck: T[], count: number, _prng: () => number): { drawn: T[], remaining: T[] } {
   const drawn = deck.slice(0, count);
   const remaining = deck.slice(count);
   return { drawn, remaining };

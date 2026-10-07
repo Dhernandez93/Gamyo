@@ -28,6 +28,7 @@ export interface HdnPublicState {
   submittedBy: PlayerId[];                                        
   submissions: { anonId: string; cards: WhiteCard[] }[] | null;   
   lastWinner?: { playerId: PlayerId; cards: WhiteCard[]; blackCard: BlackCard };
+  standby?: PlayerId[];
   scores: Record<PlayerId, number>;
   pileCount: { black: number; white: number };
 }
