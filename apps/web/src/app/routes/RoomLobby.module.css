@@ -65,6 +65,33 @@
   animation: fadeIn var(--motion-base);
 }
 
+.playerInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.avatarImg {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+}
+
+.avatarFallback {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: var(--text-sm);
+}
+
 .playerName {
   font-weight: 500;
 }

@@ -94,6 +94,13 @@ export default function RoomLobby() {
               return (
                 <li key={p.id} className={styles.playerItem}>
                   <div className={styles.playerInfo}>
+                    {info?.avatar_url ? (
+                      <img src={info.avatar_url} alt={info.nickname} className={styles.avatarImg} />
+                    ) : (
+                      <div className={styles.avatarFallback}>
+                        {info?.nickname?.charAt(0).toUpperCase() || '?'}
+                      </div>
+                    )}
                     <span className={styles.playerName}>
                       {info?.nickname || 'Cargando...'}
                       {p.id === currentUserId && ' (Tú)'}
