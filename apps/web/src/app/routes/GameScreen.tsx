@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import confetti from 'canvas-confetti';
 import { supabase } from '../../lib/supabase';
 import { GameCard } from '../../components/GameCard';
 import styles from './GameScreen.module.css';
@@ -10,6 +11,17 @@ export function GameScreen({ room, hand, user, playersInfo }: any) {
   const isCzar = room.state.czarId === user?.id;
   const hasSubmitted = room.state.submittedBy?.includes(user?.id);
   const pickCount = room.state.blackCard?.pick || 1;
+
+  useEffect(() => {
+    // Si la fase es reveal o finished, y el último ganador soy yo, tiramos confeti
+    if ((room.state.phase === 'reveal' || room.state.phase === 'finished') && room.state.lastWinner?.playerId === user?.id) {
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    }
+  }, [room.state.phase, room.state.lastWinner?.playerId, user?.id]);
 
   const handleCardClick = (cardId: string) => {
     if (selectedCards.includes(cardId)) {
