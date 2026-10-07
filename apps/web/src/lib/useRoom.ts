@@ -52,7 +52,7 @@ export function useRoom(roomId: string | undefined) {
           .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, (payload) => {
             console.log("🔥 REALTIME ROOM UPDATE:", payload.new);
             const newData = payload.new as any;
-            if (newData && newData.id === roomId && mounted) {
+            if (newData && newData.id === roomId.toUpperCase() && mounted) {
               setRoom({ ...newData });
             }
           })
@@ -65,7 +65,7 @@ export function useRoom(roomId: string | undefined) {
           .on('postgres_changes', { event: '*', schema: 'public', table: 'player_hands' }, (payload) => {
             console.log("🔥 REALTIME HAND UPDATE:", payload.new);
             const newData = payload.new as any;
-            if (newData && newData.room_id === roomId && newData.user_id === user.id && mounted) {
+            if (newData && newData.room_id === roomId.toUpperCase() && newData.user_id === user.id && mounted) {
               setHand({ ...newData.state });
             }
           })
