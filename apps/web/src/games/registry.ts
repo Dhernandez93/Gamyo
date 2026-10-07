@@ -1,5 +1,7 @@
 import { GameScreen } from '../app/routes/GameScreen';
 import { HDN_GAME_ID } from '../../../../supabase/functions/_shared/games/hora-del-nache/reducer'; // Import from backend types to share ID
+import { CuartoReyScreen } from '../app/routes/CuartoReyScreen';
+import { CUARTO_REY_ID } from '../../../../supabase/functions/_shared/games/cuarto-rey/reducer';
 
 export interface GameUIProps {
   room: any;
@@ -10,4 +12,5 @@ export interface GameUIProps {
 
 export const gameUIRegistry: Record<string, React.FC<GameUIProps>> = {
   [HDN_GAME_ID]: GameScreen,
+  [CUARTO_REY_ID]: CuartoReyScreen,
 };

@@ -74,23 +74,25 @@ Deno.serve(async (req) => {
       if (action.type === 'START_GAME' && !fullState.publicState.phase) {
         // Ejecutar setup primero
         const playersList = room.state.players.map((p: any) => p.id);
-        const setupResult = horaDelNache.setup({
+        const setupResult = engine.setup({
           players: playersList,
-          settings: horaDelNache.defaultSettings as HdnSettings,
+          settings: room.state.settings || {},
           seed: Date.now().toString()
         });
 
-        const deckIds = room.state.settings?.decks || ['00000000-0000-0000-0000-000000000000'];
-        const validDeckIds = deckIds.map((id: string) => id === 'base' ? '00000000-0000-0000-0000-000000000000' : id);
-        
-        const { data: allCards } = await supabaseAdmin.from('cards').select('*').in('deck_id', validDeckIds);
-        
-        setupResult.secretState.blackDeck = allCards?.filter(c => c.kind === 'black') || [];
-        setupResult.secretState.whiteDeck = allCards?.filter(c => c.kind === 'white') || [];
-        
-        // Shuffle inicial usando math.random porque es solo el setup
-        setupResult.secretState.blackDeck.sort(() => Math.random() - 0.5);
-        setupResult.secretState.whiteDeck.sort(() => Math.random() - 0.5);
+        if (gameId === 'hora-del-nache') {
+          const deckIds = room.state.settings?.decks || ['00000000-0000-0000-0000-000000000000'];
+          const validDeckIds = deckIds.map((id: string) => id === 'base' ? '00000000-0000-0000-0000-000000000000' : id);
+          
+          const { data: allCards } = await supabaseAdmin.from('cards').select('*').in('deck_id', validDeckIds);
+          
+          setupResult.secretState.blackDeck = allCards?.filter(c => c.kind === 'black') || [];
+          setupResult.secretState.whiteDeck = allCards?.filter(c => c.kind === 'white') || [];
+          
+          // Shuffle inicial usando math.random porque es solo el setup
+          setupResult.secretState.blackDeck.sort(() => Math.random() - 0.5);
+          setupResult.secretState.whiteDeck.sort(() => Math.random() - 0.5);
+        }
 
         fullState = setupResult;
       }

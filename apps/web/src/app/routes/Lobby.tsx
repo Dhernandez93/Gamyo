@@ -9,6 +9,11 @@ const AVAILABLE_GAMES = [
     id: 'hora-del-nache', 
     name: 'Hora del ñache', 
     description: 'El juego de cartas para mentes cuestionables. Inspirado en CAH.' 
+  },
+  {
+    id: 'cuarto-rey',
+    name: 'Cuarto Rey',
+    description: 'El clásico juego de beber con una baraja inglesa. Saca cartas y cumple reglas.'
   }
 ];
 
