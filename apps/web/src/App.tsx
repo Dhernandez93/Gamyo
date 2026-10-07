@@ -4,6 +4,8 @@ import { supabase } from './lib/supabase';
 import Login from './app/routes/Login';
 import Lobby from './app/routes/Lobby';
 import RoomLobby from './app/routes/RoomLobby';
+import MyDecks from './app/routes/MyDecks';
+import DeckEditor from './app/routes/DeckEditor';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<any>(undefined);
@@ -46,6 +48,22 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <RoomLobby />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/decks',
+    element: (
+      <ProtectedRoute>
+        <MyDecks />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/decks/:id',
+    element: (
+      <ProtectedRoute>
+        <DeckEditor />
       </ProtectedRoute>
     ),
   },

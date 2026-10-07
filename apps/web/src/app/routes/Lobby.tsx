@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { PlusCircle, SignIn, UserCircle, X, PencilSimple, GameController } from '@phosphor-icons/react';
+import { PlusCircle, SignIn, UserCircle, X, PencilSimple, GameController, Cards } from '@phosphor-icons/react';
 import styles from './Lobby.module.css';
 
 const AVAILABLE_GAMES = [
@@ -31,6 +31,8 @@ export default function Lobby() {
   // Opciones de sala
   const [scoreToWin, setScoreToWin] = useState(7);
   const [allowExpansions, setAllowExpansions] = useState(true);
+  const [myDecks, setMyDecks] = useState<any[]>([]);
+  const [selectedDecks, setSelectedDecks] = useState<string[]>(['base']);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -41,10 +43,13 @@ export default function Lobby() {
           setProfile(data);
           setNewNickname(data.nickname || '');
         } else {
-          // El perfil no existe (posiblemente porque se reinició la DB de Supabase).
           await supabase.auth.signOut();
           navigate('/');
         }
+        
+        // Fetch mis expansiones
+        const { data: decks } = await supabase.from('decks').select('id, name').eq('owner_id', user.id);
+        if (decks) setMyDecks(decks);
       }
     };
     fetchProfile();
@@ -66,8 +71,7 @@ export default function Lobby() {
             settings: {
               scoreToWin,
               allowExpansions,
-              // default decks
-              decks: ['base']
+              decks: selectedDecks
             }
           } 
         }
@@ -198,6 +202,23 @@ export default function Lobby() {
               </button>
             </form>
           </div>
+
+          {!profile?.is_anonymous && profile && (
+            <div className={styles.actionCard}>
+              <div className={styles.iconWrapper}>
+                <Cards size={48} weight="duotone" className={styles.iconPrimary} />
+              </div>
+              <h2>Mis Expansiones</h2>
+              <p>Crea mazos personalizados con tus propias cartas.</p>
+              <button 
+                className={styles.buttonSecondary} 
+                onClick={() => navigate('/decks')}
+                style={{ width: '100%', marginTop: 'auto' }}
+              >
+                Abrir Editor
+              </button>
+            </div>
+          )}
         </div>
       </main>
 
@@ -263,6 +284,28 @@ export default function Lobby() {
                       style={{ width: '24px', height: '24px', accentColor: 'var(--color-primary)' }}
                     />
                   </div>
+
+                  {myDecks.length > 0 && (
+                    <div style={{ marginTop: '0.5rem' }}>
+                      <label style={{ fontSize: '0.9rem', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>Mis Expansiones:</label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {myDecks.map(deck => (
+                          <label key={deck.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
+                            <input 
+                              type="checkbox" 
+                              checked={selectedDecks.includes(deck.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) setSelectedDecks([...selectedDecks, deck.id]);
+                                else setSelectedDecks(selectedDecks.filter(id => id !== deck.id));
+                              }}
+                              style={{ accentColor: 'var(--color-primary)' }}
+                            />
+                            {deck.name}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
