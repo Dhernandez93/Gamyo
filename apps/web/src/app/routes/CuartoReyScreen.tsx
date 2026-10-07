@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { motion, useAnimation, PanInfo } from 'framer-motion';
+import { motion } from 'framer-motion';
 import styles from './CuartoReyScreen.module.css';
 
 const SUIT_SYMBOLS: Record<string, string> = {

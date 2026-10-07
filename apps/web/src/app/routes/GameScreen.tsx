@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { motion, useAnimation, PanInfo } from 'framer-motion';
+import { motion, useAnimation, type PanInfo } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { GameCard } from '../../components/GameCard';
 import styles from './GameScreen.module.css';
@@ -57,7 +57,7 @@ export function GameScreen({ room, hand, user, playersInfo }: any) {
     }
   };
 
-  const handleDragEnd = async (event: any, info: PanInfo) => {
+  const handleDragEnd = async (_event: any, info: PanInfo) => {
     if (info.offset.y < -100 && selectedCards.length === pickCount) {
       await handleSubmitCards();
     } else {
