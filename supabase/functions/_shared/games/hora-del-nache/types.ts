@@ -56,3 +56,4 @@ export type HdnAction =
   | { type: 'NEXT_ROUND' }
   | { type: 'LEAVE_GAME' }
   | { type: 'RETURN_TO_LOBBY' }
+  | { type: 'PASS_BLACK_CARD' }

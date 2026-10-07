@@ -170,6 +170,29 @@ export function GameScreen({ room, hand, user, playersInfo }: any) {
             text={room.state.blackCard?.text || 'Esperando carta...'} 
             pickCount={room.state.blackCard?.pick}
           />
+          
+          {isCzar && room.state.phase === 'playing' && (!room.state.submittedBy || room.state.submittedBy.length === 0) && (
+            <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+              <button 
+                className={styles.submitBtn} 
+                style={{ background: 'var(--color-surface-raised)', border: '1px solid rgba(255,255,255,0.1)' }}
+                onClick={async () => {
+                  if (!window.confirm("¿Seguro que quieres cambiar la carta negra? Se sacará una nueva.")) return;
+                  try {
+                    const { data, error } = await supabase.functions.invoke('game-action', {
+                      body: { roomId: room.id, action: { type: 'PASS_BLACK_CARD' } }
+                    });
+                    if (error) throw error;
+                    if (data?.error) throw new Error(data.error);
+                  } catch (err: any) {
+                    alert(err.message || 'Error al cambiar la carta');
+                  }
+                }}
+              >
+                Cambiar Carta Negra
+              </button>
+            </div>
+          )}
 
           {(room.state.phase === 'judging' || room.state.phase === 'reveal') && room.state.submissions && (
             <div className={styles.submissionsArea}>

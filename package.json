@@ -5,5 +5,9 @@
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.3",
+    "dotenv": "^18.0.6"
   }
 }

@@ -261,6 +261,25 @@ export const horaDelNache: GameDefinition<HdnPublicState, HdnPrivateState, HdnSe
         return { publicState, privateState, secretState };
       }
 
+      case 'PASS_BLACK_CARD': {
+        if (publicState.phase !== 'playing') return { error: 'Solo puedes cambiar la carta en fase de juego' };
+        if (ctx.actorId !== publicState.czarId) return { error: 'Solo el Zar puede cambiar la carta negra' };
+        if (publicState.submittedBy.length > 0) return { error: 'No puedes cambiarla si alguien ya jugó cartas' };
+
+        // Descartar la actual
+        if (publicState.blackCard) {
+          secretState.discardBlack.push(publicState.blackCard);
+        }
+
+        const { drawn: blackDrawn, remaining: blackRem } = drawCards(secretState.blackDeck, 1, prng);
+        if (blackDrawn.length === 0) return { error: 'No hay más cartas negras' }; // TODO: reshuffle
+        
+        publicState.blackCard = blackDrawn[0];
+        secretState.blackDeck = blackRem;
+
+        return { publicState, privateState, secretState };
+      }
+
       case 'RETURN_TO_LOBBY': {
         publicState.phase = 'lobby';
         publicState.round = 0;

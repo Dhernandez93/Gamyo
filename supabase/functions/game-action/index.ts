@@ -80,8 +80,10 @@ Deno.serve(async (req) => {
           seed: Date.now().toString()
         });
 
-        // Cargar cartas desde la DB (simplificado: trae todas las de mazo A por ahora)
-        const { data: allCards } = await supabaseAdmin.from('cards').select('*')
+        const deckIds = room.state.settings?.decks || ['00000000-0000-0000-0000-000000000000'];
+        const validDeckIds = deckIds.map((id: string) => id === 'base' ? '00000000-0000-0000-0000-000000000000' : id);
+        
+        const { data: allCards } = await supabaseAdmin.from('cards').select('*').in('deck_id', validDeckIds);
         
         setupResult.secretState.blackDeck = allCards?.filter(c => c.kind === 'black') || [];
         setupResult.secretState.whiteDeck = allCards?.filter(c => c.kind === 'white') || [];
