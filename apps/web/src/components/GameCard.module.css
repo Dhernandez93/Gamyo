@@ -1,0 +1,98 @@
+.card {
+  width: 150px;
+  height: 210px;
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: all var(--motion-fast);
+  box-shadow: var(--shadow-1);
+  user-select: none;
+  font-family: 'Inter', sans-serif;
+  flex-shrink: 0;
+}
+
+.blackCard {
+  background-color: var(--color-card-black);
+  color: #fff;
+}
+
+.whiteCard {
+  background-color: var(--color-card-white);
+  color: #111;
+}
+
+.content {
+  flex: 1;
+}
+
+.text {
+  margin: 0;
+  font-weight: 700;
+  font-size: var(--text-md);
+  line-height: 1.3;
+}
+
+.footer {
+  margin-top: auto;
+  font-size: var(--text-xs);
+  opacity: 0.8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Interactivity */
+.card[role="button"] {
+  cursor: pointer;
+}
+
+.card[role="button"]:hover:not(.disabled) {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-2);
+}
+
+.selected {
+  transform: translateY(-16px);
+  box-shadow: 0 0 0 3px var(--color-primary), var(--shadow-2);
+}
+
+.selected:hover:not(.disabled) {
+  transform: translateY(-16px);
+}
+
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.badge {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background-color: var(--color-primary);
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-sm);
+  font-weight: bold;
+  box-shadow: var(--shadow-1);
+}
+
+/* Tablero media query (TV view) */
+@media (min-width: 1024px) {
+  .card {
+    width: 240px;
+    height: 336px;
+    padding: var(--space-5);
+    border-radius: var(--radius-lg);
+  }
+  .text {
+    font-size: var(--text-xl);
+  }
+}
