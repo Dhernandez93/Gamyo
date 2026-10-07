@@ -74,8 +74,17 @@ export default function RoomLobby() {
   // Vista de Lobby normal
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
-        <h1 className={styles.roomCode}>{room.id}</h1>
+      <header className={styles.header} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+          <button 
+            onClick={() => window.location.href = '/'}
+            style={{ padding: '0.5rem 1rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'white', borderRadius: 'var(--radius-md)', cursor: 'pointer' }}
+          >
+            ← Salir
+          </button>
+          <h1 className={styles.roomCode}>{room.id}</h1>
+          <div style={{ width: '60px' }}></div> {/* Spacer for centering */}
+        </div>
         <p className={styles.roomStatus}>Esperando a los demás perkinazos...</p>
       </header>
       

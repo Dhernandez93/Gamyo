@@ -11,6 +11,7 @@ export default function MyDecks() {
   // State for creating a new deck
   const [isCreating, setIsCreating] = useState(false);
   const [newDeckName, setNewDeckName] = useState('');
+  const [selectedGameId, setSelectedGameId] = useState('hora-del-nache');
   
   const navigate = useNavigate();
 
@@ -47,7 +48,7 @@ export default function MyDecks() {
     try {
       const { data, error } = await supabase.from('decks').insert({
         name: newDeckName,
-        game_id: 'hora-del-nache',
+        game_id: selectedGameId,
         kind: 'expansion',
         owner_id: user.id,
         is_adult: true,
@@ -74,24 +75,43 @@ export default function MyDecks() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1>Mis Expansiones</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+          <button 
+            onClick={() => navigate('/lobby')} 
+            style={{ background: 'transparent', border: '1px solid var(--color-border)', color: 'var(--color-text)', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer' }}
+          >
+            ← Volver
+          </button>
+          <h1 style={{ margin: 0 }}>Mis Expansiones</h1>
+        </div>
         <p>Crea tus propios mazos personalizados para jugar con amigos.</p>
       </header>
       
       <main className={styles.main}>
         <form onSubmit={handleCreateDeck} className={styles.createForm}>
-          <input 
-            type="text" 
-            placeholder="Nombre de la expansión..." 
-            value={newDeckName}
-            onChange={(e) => setNewDeckName(e.target.value)}
-            className={styles.input}
-            required
-            maxLength={50}
-          />
-          <button type="submit" className={styles.buttonPrimary} disabled={isCreating || !newDeckName.trim()}>
-            {isCreating ? 'Creando...' : 'Crear nueva expansión'}
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem', width: '100%', flexDirection: 'column' }}>
+            <input 
+              type="text" 
+              placeholder="Nombre de la expansión..." 
+              value={newDeckName}
+              onChange={(e) => setNewDeckName(e.target.value)}
+              className={styles.input}
+              required
+              maxLength={50}
+            />
+            <select 
+              value={selectedGameId} 
+              onChange={(e) => setSelectedGameId(e.target.value)}
+              className={styles.input}
+              style={{ padding: '0.75rem', background: 'rgba(0,0,0,0.2)' }}
+            >
+              <option value="hora-del-nache">Hora del ñache</option>
+              <option value="cuarto-rey">Cuarto Rey</option>
+            </select>
+            <button type="submit" className={styles.buttonPrimary} disabled={isCreating || !newDeckName.trim()}>
+              {isCreating ? 'Creando...' : 'Crear nueva expansión'}
+            </button>
+          </div>
         </form>
 
         <div className={styles.deckList}>
@@ -105,7 +125,9 @@ export default function MyDecks() {
                   <span className={deck.published ? styles.badgePublic : styles.badgePrivate}>
                     {deck.published ? 'Público' : 'Privado'}
                   </span>
-                  <span className={styles.badgeAdult}>+18</span>
+                  <span className={styles.badgeAdult} style={{ marginLeft: '0.5rem' }}>
+                    {deck.game_id === 'cuarto-rey' ? 'Cuarto Rey' : 'Hora del ñache'}
+                  </span>
                 </div>
               </div>
             ))
