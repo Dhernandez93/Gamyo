@@ -173,10 +173,16 @@ export default function Lobby() {
             </div>
             <h2>Crear Sala</h2>
             <p>Conviértete en el Host y configura las expansiones.</p>
+            {profile?.is_anonymous ? (
+              <p style={{ color: 'var(--color-primary)', fontSize: '0.9rem', marginBottom: '1rem', fontWeight: 'bold' }}>
+                Debes iniciar sesión con Google para crear salas.
+              </p>
+            ) : null}
             <button 
               className={styles.buttonPrimary} 
               onClick={() => setIsGameSelectorOpen(true)}
-              disabled={isLoading}
+              disabled={isLoading || profile?.is_anonymous}
+              style={{ opacity: profile?.is_anonymous ? 0.5 : 1, cursor: profile?.is_anonymous ? 'not-allowed' : 'pointer' }}
             >
               Crear Nueva Sala
             </button>

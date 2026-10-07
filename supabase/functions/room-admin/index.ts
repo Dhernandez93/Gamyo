@@ -37,6 +37,12 @@ Deno.serve(async (req) => {
     const { action, payload } = await req.json()
 
     if (action === 'create') {
+      // Check if user is anonymous (we can check by user metadata or just fetch from player_private)
+      const { data: profile } = await supabaseAdmin.from('player_private').select('is_anonymous').eq('id', user.id).single()
+      if (profile?.is_anonymous) {
+        throw new Error("Usuarios anónimos no pueden crear salas")
+      }
+
       const { gameId, settings } = payload || {};
       if (!gameId) throw new Error("Debes elegir un juego para la sala");
 
