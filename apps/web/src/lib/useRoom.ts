@@ -49,11 +49,10 @@ export function useRoom(roomId: string | undefined) {
 
         // Suscribirse a la sala
         roomChannel = supabase.channel(`room:${roomId}`)
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, (payload) => {
-            console.log("🔥 REALTIME ROOM UPDATE:", payload.new);
-            const newData = payload.new as any;
-            if (newData && newData.id === roomId.toUpperCase() && mounted) {
-              setRoom({ ...newData });
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${roomId.toUpperCase()}` }, (payload) => {
+            console.log("🔥 REALTIME ROOM UPDATE:", payload);
+            if (payload.new && mounted) {
+              setRoom({ ...payload.new as any });
             }
           })
           .subscribe((status) => {
@@ -62,10 +61,10 @@ export function useRoom(roomId: string | undefined) {
 
         // Suscribirse a la mano
         handChannel = supabase.channel(`hand:${roomId}:${user.id}`)
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'player_hands' }, (payload) => {
-            console.log("🔥 REALTIME HAND UPDATE:", payload.new);
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'player_hands', filter: `room_id=eq.${roomId.toUpperCase()}` }, (payload) => {
+            console.log("🔥 REALTIME HAND UPDATE:", payload);
             const newData = payload.new as any;
-            if (newData && newData.room_id === roomId.toUpperCase() && newData.user_id === user.id && mounted) {
+            if (newData && newData.user_id === user.id && mounted) {
               setHand({ ...newData.state });
             }
           })
