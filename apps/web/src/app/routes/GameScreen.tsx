@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
+import { motion, useAnimation, PanInfo } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { GameCard } from '../../components/GameCard';
 import styles from './GameScreen.module.css';
@@ -7,6 +8,7 @@ import styles from './GameScreen.module.css';
 export function GameScreen({ room, hand, user, playersInfo }: any) {
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const dragControls = useAnimation();
 
   const isCzar = room.state.czarId === user?.id;
   const hasSubmitted = room.state.submittedBy?.includes(user?.id);
@@ -49,8 +51,17 @@ export function GameScreen({ room, hand, user, playersInfo }: any) {
       setSelectedCards([]);
     } catch (err: any) {
       alert(err.message || 'Error al jugar las cartas');
+      dragControls.start({ y: 0 }); // reset if error
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDragEnd = async (event: any, info: PanInfo) => {
+    if (info.offset.y < -100 && selectedCards.length === pickCount) {
+      await handleSubmitCards();
+    } else {
+      dragControls.start({ y: 0 });
     }
   };
 
@@ -263,14 +274,36 @@ export function GameScreen({ room, hand, user, playersInfo }: any) {
                   })}
                 </div>
                 
-                <div className={styles.actionBar}>
-                  <button 
-                    className={styles.submitBtn}
-                    onClick={handleSubmitCards} 
-                    disabled={selectedCards.length !== pickCount || isSubmitting}
-                  >
-                    {isSubmitting ? 'Enviando...' : `Jugar ${selectedCards.length}/${pickCount}`}
-                  </button>
+                <div className={styles.actionBar} style={{ overflow: 'visible', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  {selectedCards.length === pickCount ? (
+                    <motion.div
+                      drag="y"
+                      dragConstraints={{ top: -300, bottom: 0 }}
+                      onDragEnd={handleDragEnd}
+                      animate={dragControls}
+                      style={{
+                        padding: '1rem',
+                        background: 'linear-gradient(135deg, var(--color-primary), #6366f1)',
+                        color: 'white',
+                        borderRadius: 'var(--radius-lg)',
+                        fontWeight: 'bold',
+                        cursor: 'grab',
+                        width: '100%',
+                        textAlign: 'center',
+                        boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        touchAction: 'none'
+                      }}
+                      whileDrag={{ scale: 1.05, cursor: 'grabbing' }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {isSubmitting ? 'Enviando...' : '👆 Desliza hacia arriba para jugar'}
+                    </motion.div>
+                  ) : (
+                    <div style={{ color: 'var(--color-text-muted)', padding: '1rem' }}>
+                      Selecciona {pickCount} carta{pickCount > 1 ? 's' : ''}
+                    </div>
+                  )}
                 </div>
               </>
             )}
