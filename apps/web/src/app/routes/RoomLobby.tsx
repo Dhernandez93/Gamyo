@@ -12,8 +12,6 @@ export default function RoomLobby() {
   const [playersInfo, setPlayersInfo] = useState<any[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
-  const [selectedCards, setSelectedCards] = useState<string[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {

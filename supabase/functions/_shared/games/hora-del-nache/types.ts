@@ -1,4 +1,4 @@
-import { PlayerId } from "../../engine/types.ts";
+import type { PlayerId } from "../../engine/types.ts";
 
 export interface HdnSettings {
   scoreToWin: number;
@@ -23,6 +23,7 @@ export interface WhiteCard {
 export interface HdnPublicState {
   phase: 'lobby' | 'dealing' | 'playing' | 'judging' | 'reveal' | 'finished';
   round: number;
+  players?: any[];
   czarId: PlayerId | null;
   blackCard: BlackCard | null;
   submittedBy: PlayerId[];                                        

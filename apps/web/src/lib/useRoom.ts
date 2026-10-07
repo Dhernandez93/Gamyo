@@ -51,8 +51,9 @@ export function useRoom(roomId: string | undefined) {
         roomChannel = supabase.channel(`room:${roomId}`)
           .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, (payload) => {
             console.log("🔥 REALTIME ROOM UPDATE:", payload.new);
-            if (payload.new && payload.new.id === roomId && mounted) {
-              setRoom({ ...payload.new });
+            const newData = payload.new as any;
+            if (newData && newData.id === roomId && mounted) {
+              setRoom({ ...newData });
             }
           })
           .subscribe((status) => {
@@ -63,8 +64,9 @@ export function useRoom(roomId: string | undefined) {
         handChannel = supabase.channel(`hand:${roomId}:${user.id}`)
           .on('postgres_changes', { event: '*', schema: 'public', table: 'player_hands' }, (payload) => {
             console.log("🔥 REALTIME HAND UPDATE:", payload.new);
-            if (payload.new && payload.new.room_id === roomId && payload.new.user_id === user.id && mounted) {
-              setHand({ ...payload.new.state });
+            const newData = payload.new as any;
+            if (newData && newData.room_id === roomId && newData.user_id === user.id && mounted) {
+              setHand({ ...newData.state });
             }
           })
           .subscribe();

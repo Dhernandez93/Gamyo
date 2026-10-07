@@ -1,5 +1,5 @@
 import type { ActionCtx, FullState, GameDefinition, PlayerId, SetupCtx } from "../../engine/types.ts";
-import type { HdnAction, HdnPrivateState, HdnPublicState, HdnSecretState, HdnSettings, WhiteCard, BlackCard } from "./types.ts";
+import type { HdnAction, HdnPrivateState, HdnPublicState, HdnSecretState, HdnSettings } from "./types.ts";
 
 export const HDN_GAME_ID = 'hora-del-nache';
 
@@ -264,8 +264,8 @@ export const horaDelNache: GameDefinition<HdnPublicState, HdnPrivateState, HdnSe
       case 'RETURN_TO_LOBBY': {
         publicState.phase = 'lobby';
         publicState.round = 0;
-        publicState.czarId = undefined;
-        publicState.blackCard = undefined;
+        publicState.czarId = null;
+        publicState.blackCard = null;
         publicState.submittedBy = [];
         publicState.submissions = null;
         publicState.lastWinner = undefined;
