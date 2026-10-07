@@ -14,6 +14,8 @@ export function useRoom(roomId: string | undefined) {
     let roomChannel: any;
     let handChannel: any;
 
+    let cleanupPolling: any;
+
     const fetchInitial = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -22,7 +24,7 @@ export function useRoom(roomId: string | undefined) {
         const { data: roomData, error: roomError } = await supabase
           .from('rooms')
           .select('*')
-          .eq('id', roomId)
+          .eq('id', roomId.toUpperCase())
           .single();
 
         if (roomError) throw roomError;
@@ -31,7 +33,7 @@ export function useRoom(roomId: string | undefined) {
         const { data: handData } = await supabase
           .from('player_hands')
           .select('*')
-          .eq('room_id', roomId)
+          .eq('room_id', roomId.toUpperCase())
           .eq('user_id', user.id)
           .maybeSingle();
 
@@ -71,6 +73,22 @@ export function useRoom(roomId: string | undefined) {
           })
           .subscribe();
 
+        // FALLBACK: Polling por si el Realtime falla en la nube
+        const pollInterval = setInterval(async () => {
+          if (!mounted) return;
+          const { data: pollRoom } = await supabase.from('rooms').select('*').eq('id', roomId.toUpperCase()).maybeSingle();
+          if (pollRoom && mounted) {
+            setRoom((prev: any) => (prev?.version !== pollRoom.version ? { ...pollRoom } : prev));
+          }
+          
+          const { data: pollHand } = await supabase.from('player_hands').select('*').eq('room_id', roomId.toUpperCase()).eq('user_id', user.id).maybeSingle();
+          if (pollHand && mounted) {
+            setHand((prev: any) => (JSON.stringify(prev) !== JSON.stringify(pollHand.state) ? { ...pollHand.state } : prev));
+          }
+        }, 3000);
+
+        cleanupPolling = () => clearInterval(pollInterval);
+
       } catch (err: any) {
         if (mounted) {
           setError(err);
@@ -85,6 +103,7 @@ export function useRoom(roomId: string | undefined) {
       mounted = false;
       if (roomChannel) supabase.removeChannel(roomChannel);
       if (handChannel) supabase.removeChannel(handChannel);
+      if (cleanupPolling) cleanupPolling();
     };
   }, [roomId]);
 
