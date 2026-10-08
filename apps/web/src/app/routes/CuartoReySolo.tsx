@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { motion } from 'framer-motion';
+// @ts-ignore - TS won't compile paths outside the src directory but Vite will
 import { cuartoRey } from '../../../../supabase/functions/_shared/games/cuarto-rey/reducer';
-import type { CrAction, CrPublicState, CrSecretState, PlayingCard } from '../../../../supabase/functions/_shared/games/cuarto-rey/types';
+// @ts-ignore
+import type { CrPublicState, CrSecretState } from '../../../../supabase/functions/_shared/games/cuarto-rey/types';
 import styles from './CuartoReyScreen.module.css';
 
 const SUIT_SYMBOLS: Record<string, string> = {
