@@ -6,6 +6,7 @@ import Lobby from './app/routes/Lobby';
 import RoomLobby from './app/routes/RoomLobby';
 import MyDecks from './app/routes/MyDecks';
 import DeckEditor from './app/routes/DeckEditor';
+import CuartoReySolo from './app/routes/CuartoReySolo';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<any>(undefined);
@@ -64,6 +65,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <DeckEditor />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/cuarto-rey-solo',
+    element: (
+      <ProtectedRoute>
+        <CuartoReySolo />
       </ProtectedRoute>
     ),
   },

@@ -215,20 +215,37 @@ export default function Lobby() {
           </div>
 
           {!profile?.is_anonymous && profile && (
-            <div className={styles.actionCard}>
-              <div className={styles.iconWrapper}>
-                <Cards size={48} weight="duotone" className={styles.iconPrimary} />
+            <>
+              <div className={styles.actionCard}>
+                <div className={styles.iconWrapper}>
+                  <Cards size={48} weight="duotone" className={styles.iconPrimary} />
+                </div>
+                <h2>Mis Expansiones</h2>
+                <p>Crea mazos personalizados con tus propias cartas.</p>
+                <button 
+                  className={styles.buttonSecondary} 
+                  onClick={() => navigate('/decks')}
+                  style={{ width: '100%', marginTop: 'auto' }}
+                >
+                  Abrir Editor
+                </button>
               </div>
-              <h2>Mis Expansiones</h2>
-              <p>Crea mazos personalizados con tus propias cartas.</p>
-              <button 
-                className={styles.buttonSecondary} 
-                onClick={() => navigate('/decks')}
-                style={{ width: '100%', marginTop: 'auto' }}
-              >
-                Abrir Editor
-              </button>
-            </div>
+
+              <div className={styles.actionCard}>
+                <div className={styles.iconWrapper}>
+                  <GameController size={48} weight="duotone" className={styles.iconPrimary} style={{ color: '#10b981' }} />
+                </div>
+                <h2>Cuarto Rey (Solo)</h2>
+                <p>Modo offline para jugar en un solo teléfono. No requiere internet.</p>
+                <button 
+                  className={styles.buttonSecondary} 
+                  onClick={() => navigate('/cuarto-rey-solo')}
+                  style={{ width: '100%', marginTop: 'auto', borderColor: '#10b981', color: '#10b981' }}
+                >
+                  Jugar Offline
+                </button>
+              </div>
+            </>
           )}
         </div>
       </main>
