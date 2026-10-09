@@ -1,94 +1,109 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
 
+/**
+ * Sincronización de sala en tiempo real.
+ *
+ * Estrategia (en orden de prioridad):
+ *  1. Realtime Broadcast en el tópico `room:{CODE}` emitido por las Edge Functions
+ *     tras cada acción (evento 'sync' con el estado público completo). ~100-200ms.
+ *  2. Si nuestra mano cambió (handUserIds incluye nuestro id) se re-lee la mano por REST
+ *     (las manos son privadas y nunca viajan por un canal público).
+ *  3. Re-sincronización al volver a la pestaña / reconectar el canal.
+ *  4. Polling de respaldo lento (8s) por si el socket se cae en redes móviles.
+ *
+ * Los updates de sala se aplican solo si `version` es mayor a la actual, evitando
+ * que un mensaje atrasado pise un estado más nuevo.
+ */
 export function useRoom(roomId: string | undefined) {
   const [room, setRoom] = useState<any>(null);
   const [hand, setHand] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
+  const versionRef = useRef<number>(0);
 
   useEffect(() => {
     if (!roomId) return;
+    const code = roomId.toUpperCase();
 
     let mounted = true;
-    let roomChannel: any;
-    let handChannel: any;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
+    let userId: string | null = null;
 
-    let cleanupPolling: any;
+    const applyRoom = (next: any) => {
+      if (!mounted || !next || next.id?.trim?.() !== code) return;
+      if ((next.version ?? 0) < versionRef.current) return; // mensaje atrasado
+      versionRef.current = next.version ?? 0;
+      setRoom(next);
+    };
 
-    const fetchInitial = async () => {
+    const fetchRoom = async () => {
+      const { data, error: roomError } = await supabase.from('rooms').select('*').eq('id', code).maybeSingle();
+      if (roomError) throw roomError;
+      if (data) applyRoom(data);
+      return data;
+    };
+
+    const fetchHand = async () => {
+      if (!userId) return;
+      const { data } = await supabase
+        .from('player_hands')
+        .select('state')
+        .eq('room_id', code)
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (data && mounted) {
+        setHand((prev: any) => (JSON.stringify(prev) === JSON.stringify(data.state) ? prev : data.state));
+      }
+    };
+
+    const resync = () => {
+      fetchRoom().catch(() => {});
+      fetchHand().catch(() => {});
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') resync();
+    };
+
+    const init = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user || !mounted) throw new Error('No autenticado o desmontado');
-
-        const { data: roomData, error: roomError } = await supabase
-          .from('rooms')
-          .select('*')
-          .eq('id', roomId.toUpperCase())
-          .single();
-
-        if (roomError) throw roomError;
-        if (mounted) setRoom(roomData);
-
-        const { data: handData } = await supabase
-          .from('player_hands')
-          .select('*')
-          .eq('room_id', roomId.toUpperCase())
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (handData && mounted) setHand(handData.state);
-        if (mounted) setLoading(false);
-
         if (!mounted) return;
+        if (!user) throw new Error('No autenticado');
+        userId = user.id;
 
-        // Eliminar canales huérfanos previos para evitar el error de "cannot add callbacks after subscribe"
-        supabase.getChannels().forEach(c => {
-          if (c.topic === `realtime:room:${roomId}` || c.topic === `realtime:hand:${roomId}:${user.id}`) {
-            supabase.removeChannel(c);
-          }
+        // Suscribir ANTES de leer el estado inicial para no perder eventos intermedios
+        supabase.getChannels().forEach((c) => {
+          if (c.topic === `realtime:room:${code}`) supabase.removeChannel(c);
         });
 
-        // Suscribirse a la sala
-        roomChannel = supabase.channel(`room:${roomId}`)
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, (payload) => {
-            console.log("🔥 REALTIME ROOM UPDATE:", payload);
-            const newData = payload.new as any;
-            if (newData && newData.id === roomId.toUpperCase() && mounted) {
-              setRoom({ ...newData });
+        channel = supabase
+          .channel(`room:${code}`, { config: { broadcast: { self: false } } })
+          .on('broadcast', { event: 'sync' }, ({ payload }) => {
+            if (payload?.room) applyRoom(payload.room);
+            if (Array.isArray(payload?.handUserIds) && payload.handUserIds.includes(userId)) {
+              fetchHand().catch(() => {});
             }
           })
           .subscribe((status) => {
-            console.log("🔥 ROOM CHANNEL STATUS:", status);
+            // Al (re)conectar, re-sincronizar por si se perdió algo mientras estaba caído
+            if (status === 'SUBSCRIBED') resync();
           });
 
-        // Suscribirse a la mano
-        handChannel = supabase.channel(`hand:${roomId}:${user.id}`)
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'player_hands' }, (payload) => {
-            console.log("🔥 REALTIME HAND UPDATE:", payload);
-            const newData = payload.new as any;
-            if (newData && newData.room_id === roomId.toUpperCase() && newData.user_id === user.id && mounted) {
-              setHand({ ...newData.state });
-            }
-          })
-          .subscribe();
+        const roomData = await fetchRoom();
+        if (!roomData) throw new Error('Sala no encontrada');
+        await fetchHand();
+        if (mounted) setLoading(false);
 
-        // FALLBACK: Polling por si el Realtime falla en la nube
-        const pollInterval = setInterval(async () => {
-          if (!mounted) return;
-          const { data: pollRoom } = await supabase.from('rooms').select('*').eq('id', roomId.toUpperCase()).maybeSingle();
-          if (pollRoom && mounted) {
-            setRoom((prev: any) => (prev?.version !== pollRoom.version ? { ...pollRoom } : prev));
-          }
-          
-          const { data: pollHand } = await supabase.from('player_hands').select('*').eq('room_id', roomId.toUpperCase()).eq('user_id', user.id).maybeSingle();
-          if (pollHand && mounted) {
-            setHand((prev: any) => (JSON.stringify(prev) !== JSON.stringify(pollHand.state) ? { ...pollHand.state } : prev));
-          }
-        }, 3000);
+        document.addEventListener('visibilitychange', onVisibility);
+        window.addEventListener('online', resync);
 
-        cleanupPolling = () => clearInterval(pollInterval);
-
+        // Fallback lento por si el WebSocket muere silenciosamente
+        pollInterval = setInterval(() => {
+          if (document.visibilityState === 'visible') resync();
+        }, 8000);
       } catch (err: any) {
         if (mounted) {
           setError(err);
@@ -97,13 +112,15 @@ export function useRoom(roomId: string | undefined) {
       }
     };
 
-    fetchInitial();
+    versionRef.current = 0;
+    init();
 
     return () => {
       mounted = false;
-      if (roomChannel) supabase.removeChannel(roomChannel);
-      if (handChannel) supabase.removeChannel(handChannel);
-      if (cleanupPolling) cleanupPolling();
+      if (channel) supabase.removeChannel(channel);
+      if (pollInterval) clearInterval(pollInterval);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('online', resync);
     };
   }, [roomId]);
 

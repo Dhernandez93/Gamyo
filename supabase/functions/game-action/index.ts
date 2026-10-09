@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4"
 import { gameRegistry } from "../_shared/engine/registry.ts"
+import { broadcastRoomSync } from "../_shared/broadcast.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -33,6 +34,8 @@ Deno.serve(async (req) => {
     let success = false;
     let retries = 3;
     let latestVersion = 0;
+    let updatedRoom: any = null;
+    let changedHandIds: string[] = [];
 
     while (!success && retries > 0) {
       // 1. Cargar el estado completo actual
@@ -63,8 +66,10 @@ Deno.serve(async (req) => {
         secretState: secrets.state || {}
       }
 
+      const dbHands: Record<string, string> = {}
       handsData.forEach((h: any) => {
         fullState.privateState[h.user_id] = h.state;
+        dbHands[h.user_id] = JSON.stringify(h.state);
       })
 
       console.log("==> BEFORE SETUP:", JSON.stringify(fullState.publicState));
@@ -108,18 +113,20 @@ Deno.serve(async (req) => {
       }
 
       // 3. Guardar estado con optimistic locking
-      const { error: updateRoomError } = await supabaseAdmin.from('rooms')
+      const { data: updatedRows, error: updateRoomError } = await supabaseAdmin.from('rooms')
         .update({
           state: { ...room.state, ...newState.publicState },
           version: room.version + 1
         })
         .eq('id', roomId)
         .eq('version', room.version)
+        .select()
 
-      if (updateRoomError) {
+      if (updateRoomError || !updatedRows || updatedRows.length === 0) {
         retries--;
-        continue; // Optimistic locking failed, retry
+        continue; // Optimistic locking failed (otra acción ganó la carrera), reintentar
       }
+      updatedRoom = updatedRows[0];
 
       // Si room update fue exitoso, garantizamos que las demás updates son seguras (idealmente en transacción, pero servirá)
       const ops = [];
@@ -127,8 +134,11 @@ Deno.serve(async (req) => {
         .update({ state: newState.secretState })
         .eq('room_id', roomId));
 
-      // Upsert hands
+      // Upsert solo las manos que cambiaron
+      changedHandIds = [];
       for (const [playerId, handState] of Object.entries(newState.privateState)) {
+        if (JSON.stringify(handState) === dbHands[playerId]) continue;
+        changedHandIds.push(playerId);
         ops.push(supabaseAdmin.from('player_hands')
           .upsert({ room_id: roomId, user_id: playerId, state: handState }));
       }
@@ -142,6 +152,9 @@ Deno.serve(async (req) => {
     if (!success) {
       throw new Error("Error de concurrencia al actualizar el juego")
     }
+
+    // Notificar a todos los clientes en tiempo real
+    await broadcastRoomSync(roomId, updatedRoom, changedHandIds)
 
     return new Response(JSON.stringify({ success: true, version: latestVersion }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 

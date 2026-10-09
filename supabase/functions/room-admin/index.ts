@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4"
+import { broadcastRoomSync } from "../_shared/broadcast.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -91,15 +92,16 @@ Deno.serve(async (req) => {
         if (!players.find((p: any) => p.id === user.id)) {
           players.push({ id: user.id, score: 0 })
           
-          const { error: updateError } = await supabaseAdmin.from('rooms')
+          const { data: updatedRows, error: updateError } = await supabaseAdmin.from('rooms')
             .update({
               state: { ...room.state, players },
               version: room.version + 1
             })
             .eq('id', roomCode)
             .eq('version', room.version)
+            .select()
 
-          if (!updateError) {
+          if (!updateError && updatedRows && updatedRows.length > 0) {
             // Updated successfully
             joined = true;
             await supabaseAdmin.from('player_hands').upsert({
@@ -107,6 +109,7 @@ Deno.serve(async (req) => {
               user_id: user.id,
               state: {}
             });
+            await broadcastRoomSync(roomCode, updatedRows[0], [])
           } else {
             retries--;
           }
