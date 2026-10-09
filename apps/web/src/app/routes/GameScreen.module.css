@@ -130,16 +130,112 @@
   display: flex;
   gap: var(--space-3);
   overflow-x: auto;
-  padding: var(--space-2) var(--space-4) var(--space-5);
+  overflow-y: visible;
+  padding: calc(var(--space-6) + 4px) var(--space-4) var(--space-3);
+  margin-top: -1.25rem;
   scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
 }
 
 .carousel > * {
   scroll-snap-align: center;
 }
 
+.cardMotionWrapper {
+  flex-shrink: 0;
+  position: relative;
+  cursor: grab;
+}
+
+.swipeHintBadge {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, var(--color-primary), #6366f1);
+  color: white;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: background var(--motion-fast), box-shadow var(--motion-fast);
+}
+
+.swipeHintBadgeReady {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.6) !important;
+}
+
 .actionBar {
   padding: 0 var(--space-4);
+}
+
+.instructionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: var(--radius-lg);
+  width: 100%;
+}
+
+.instructionPrompt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.instructionArrow {
+  font-size: 1.1rem;
+  color: var(--color-primary);
+  display: inline-block;
+  font-weight: 800;
+}
+
+.instructionBarPending {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+  width: 100%;
+}
+
+.playFallbackBtn {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 0.45rem 0.9rem;
+  font-weight: 600;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity var(--motion-fast), background-color var(--motion-fast);
+}
+
+.playFallbackBtn:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+}
+
+.playFallbackBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .submitBtn {

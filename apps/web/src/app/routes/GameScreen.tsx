@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { motion, useAnimation, type PanInfo } from 'framer-motion';
+import { motion, type PanInfo } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { GameCard } from '../../components/GameCard';
 import styles from './GameScreen.module.css';
@@ -8,7 +8,8 @@ import styles from './GameScreen.module.css';
 export function GameScreen({ room, hand, user, playersInfo }: any) {
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const dragControls = useAnimation();
+  const [flyingCardIds, setFlyingCardIds] = useState<string[]>([]);
+  const [isDragOverThreshold, setIsDragOverThreshold] = useState<Record<string, boolean>>({});
 
   const isCzar = room.state.czarId === user?.id;
   const hasSubmitted = room.state.submittedBy?.includes(user?.id);
@@ -35,12 +36,10 @@ export function GameScreen({ room, hand, user, playersInfo }: any) {
     }
   };
 
-  const handleSubmitCards = async () => {
-    if (selectedCards.length !== pickCount) return;
+  const handleSubmitCards = async (cardsToPlayOverride?: any[]) => {
+    const cardsToPlay = cardsToPlayOverride || selectedCards.map(id => hand?.hand?.find((c: any) => c.id === id)).filter(Boolean);
+    if (cardsToPlay.length !== pickCount) return;
     setIsSubmitting(true);
-    
-    // Obtenemos los objetos completos de las cartas seleccionadas
-    const cardsToPlay = selectedCards.map(id => hand.hand.find((c: any) => c.id === id));
     
     try {
       const { data, error } = await supabase.functions.invoke('game-action', {
@@ -49,19 +48,44 @@ export function GameScreen({ room, hand, user, playersInfo }: any) {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       setSelectedCards([]);
+      setFlyingCardIds([]);
     } catch (err: any) {
       alert(err.message || 'Error al jugar las cartas');
-      dragControls.start({ y: 0 }); // reset if error
+      setFlyingCardIds([]);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDragEnd = async (_event: any, info: PanInfo) => {
-    if (info.offset.y < -100 && selectedCards.length === pickCount) {
-      await handleSubmitCards();
+  const handleCardDragEnd = async (cardId: string, info: PanInfo) => {
+    if (isSubmitting || hasSubmitted) return;
+    const isOverThreshold = info.offset.y < -65 || info.velocity.y < -250;
+    
+    if (!isOverThreshold) {
+      return;
+    }
+
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try { navigator.vibrate(40); } catch (_) {}
+    }
+
+    if (pickCount === 1) {
+      setSelectedCards([cardId]);
+      setFlyingCardIds([cardId]);
+      const cardObj = hand?.hand?.find((c: any) => c.id === cardId);
+      if (cardObj) {
+        await handleSubmitCards([cardObj]);
+      }
     } else {
-      dragControls.start({ y: 0 });
+      if (selectedCards.length === pickCount && selectedCards.includes(cardId)) {
+        setFlyingCardIds([...selectedCards]);
+        const cardsToPlay = selectedCards.map(id => hand?.hand?.find((c: any) => c.id === id)).filter(Boolean);
+        await handleSubmitCards(cardsToPlay);
+      } else {
+        if (!selectedCards.includes(cardId) && selectedCards.length < pickCount) {
+          setSelectedCards(prev => [...prev, cardId]);
+        }
+      }
     }
   };
 
@@ -262,46 +286,87 @@ export function GameScreen({ room, hand, user, playersInfo }: any) {
                 <div className={styles.carousel}>
                   {hand?.hand?.map((card: any) => {
                     const selIdx = selectedCards.indexOf(card.id);
+                    const isSelected = selIdx !== -1;
+                    const isFlying = flyingCardIds.includes(card.id);
+                    const isOver = !!isDragOverThreshold[card.id];
+
                     return (
-                      <GameCard 
-                        key={card.id} 
-                        text={card.text} 
-                        selected={selIdx !== -1}
-                        selectionOrder={pickCount > 1 && selIdx !== -1 ? selIdx + 1 : undefined}
-                        onClick={() => handleCardClick(card.id)}
-                      />
+                      <motion.div
+                        key={card.id}
+                        className={styles.cardMotionWrapper}
+                        drag={!hasSubmitted && !isSubmitting ? "y" : false}
+                        dragDirectionLock
+                        dragConstraints={{ top: -350, bottom: 0 }}
+                        dragElastic={{ top: 0.6, bottom: 0.05 }}
+                        dragSnapToOrigin={!isFlying}
+                        onDrag={(_event, info) => {
+                          const reached = info.offset.y < -65;
+                          setIsDragOverThreshold(prev => prev[card.id] === reached ? prev : { ...prev, [card.id]: reached });
+                        }}
+                        onDragEnd={(_event, info) => {
+                          setIsDragOverThreshold(prev => ({ ...prev, [card.id]: false }));
+                          handleCardDragEnd(card.id, info);
+                        }}
+                        onTap={() => handleCardClick(card.id)}
+                        animate={
+                          isFlying
+                            ? { y: -450, opacity: 0, scale: 0.85, rotate: -6, transition: { duration: 0.35, ease: 'easeOut' } }
+                            : isSelected
+                            ? { y: -20, scale: 1.02, transition: { type: 'spring', stiffness: 400, damping: 25 } }
+                            : { y: 0, scale: 1, transition: { type: 'spring', stiffness: 400, damping: 25 } }
+                        }
+                        whileDrag={{
+                          scale: 1.06,
+                          zIndex: 100,
+                          cursor: 'grabbing',
+                        }}
+                        style={{
+                          touchAction: 'pan-x',
+                        }}
+                      >
+                        {isSelected && (
+                          <div className={`${styles.swipeHintBadge} ${isOver ? styles.swipeHintBadgeReady : ''}`}>
+                            {isOver ? '🚀 ¡Suelta para jugar!' : '↑ Desliza para jugar'}
+                          </div>
+                        )}
+                        <GameCard 
+                          text={card.text} 
+                          selected={isSelected}
+                          selectionOrder={pickCount > 1 && isSelected ? selIdx + 1 : undefined}
+                        />
+                      </motion.div>
                     );
                   })}
                 </div>
                 
-                <div className={styles.actionBar} style={{ overflow: 'visible', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div className={styles.actionBar}>
                   {selectedCards.length === pickCount ? (
-                    <motion.div
-                      drag="y"
-                      dragConstraints={{ top: -300, bottom: 0 }}
-                      onDragEnd={handleDragEnd}
-                      animate={dragControls}
-                      style={{
-                        padding: '1rem',
-                        background: 'linear-gradient(135deg, var(--color-primary), #6366f1)',
-                        color: 'white',
-                        borderRadius: 'var(--radius-lg)',
-                        fontWeight: 'bold',
-                        cursor: 'grab',
-                        width: '100%',
-                        textAlign: 'center',
-                        boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        touchAction: 'none'
-                      }}
-                      whileDrag={{ scale: 1.05, cursor: 'grabbing' }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      {isSubmitting ? 'Enviando...' : '👆 Desliza hacia arriba para jugar'}
-                    </motion.div>
+                    <div className={styles.instructionBar}>
+                      <div className={styles.instructionPrompt}>
+                        <motion.span 
+                          animate={{ y: [0, -3, 0] }} 
+                          transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
+                          className={styles.instructionArrow}
+                        >
+                          ↑
+                        </motion.span>
+                        <span>
+                          {isSubmitting ? 'Enviando...' : 'Desliza la carta hacia arriba para lanzarla'}
+                        </span>
+                      </div>
+                      <button 
+                        className={styles.playFallbackBtn} 
+                        onClick={() => handleSubmitCards()}
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? 'Enviando...' : 'Jugar ahora'}
+                      </button>
+                    </div>
                   ) : (
-                    <div style={{ color: 'var(--color-text-muted)', padding: '1rem' }}>
-                      Selecciona {pickCount} carta{pickCount > 1 ? 's' : ''}
+                    <div className={styles.instructionBarPending}>
+                      <span>
+                        Elige {pickCount - selectedCards.length} carta{pickCount - selectedCards.length > 1 ? 's' : ''} de tu mano (o deslízala directamente hacia arriba)
+                      </span>
                     </div>
                   )}
                 </div>
