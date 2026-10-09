@@ -14,6 +14,11 @@ const AVAILABLE_GAMES = [
     id: 'cuarto-rey',
     name: 'Cuarto Rey',
     description: 'El clásico juego de beber con una baraja inglesa. Saca cartas y cumple reglas.'
+  },
+  {
+    id: 'la-oca-curaguilla',
+    name: 'La Oca Curagüilla',
+    description: 'El tablero interactivo para carretear. Tira los dados, supera desafíos y no arrugues.'
   }
 ];
 
@@ -33,11 +38,16 @@ export default function Lobby() {
   const [isGameSelectorOpen, setIsGameSelectorOpen] = useState(false);
   const [selectedGameId, setSelectedGameId] = useState<string>(AVAILABLE_GAMES[0].id);
   
-  // Opciones de sala
+  // Opciones de sala - Hora del Ñache
   const [scoreToWin, setScoreToWin] = useState(7);
   const [allowExpansions, setAllowExpansions] = useState(true);
   const [myDecks, setMyDecks] = useState<any[]>([]);
   const [selectedDecks, setSelectedDecks] = useState<string[]>(['base']);
+
+  // Opciones de sala - La Oca Curagüilla
+  const [ocaLevels, setOcaLevels] = useState<number[]>([1, 2]);
+  const [ocaBoardSize] = useState<number>(50);
+  const [ocaPenaltyType, setOcaPenaltyType] = useState<'fondo_blanco' | 'cinco_sorbos'>('fondo_blanco');
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -68,16 +78,23 @@ export default function Lobby() {
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session) throw new Error("No autenticado");
 
+      let settingsPayload: any = {};
+      if (selectedGameId === 'hora-del-nache') {
+        settingsPayload = { scoreToWin, allowExpansions, decks: selectedDecks };
+      } else if (selectedGameId === 'la-oca-curaguilla') {
+        settingsPayload = {
+          enabledLevels: ocaLevels.length > 0 ? ocaLevels : [1, 2],
+          boardSize: ocaBoardSize,
+          penaltyType: ocaPenaltyType
+        };
+      }
+
       const { data, error: fnError } = await supabase.functions.invoke('room-admin', {
         body: { 
           action: 'create', 
           payload: { 
             gameId: selectedGameId,
-            settings: {
-              scoreToWin,
-              allowExpansions,
-              decks: selectedDecks
-            }
+            settings: settingsPayload
           } 
         }
       });
@@ -334,6 +351,56 @@ export default function Lobby() {
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+
+              {selectedGameId === 'la-oca-curaguilla' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem', padding: '1rem', backgroundColor: 'var(--color-surface-raised)', borderRadius: 'var(--radius-md)' }}>
+                  <div>
+                    <label style={{ fontSize: '0.9rem', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>
+                      Intensidad del Carrete (Niveles):
+                    </label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                      {[
+                        { level: 1, name: 'Nivel 1: Previa / Rompehielo', desc: 'Anécdotas suaves, reflejos, votaciones absurdas.' },
+                        { level: 2, name: 'Nivel 2: Cahuín / Picante', desc: 'Secretos, exparejas, roces y verdades incómodas.' },
+                        { level: 3, name: 'Nivel 3: Calentura / Hot', desc: 'Atracción, toqueteos consensuados, prendas menores.' },
+                        { level: 4, name: 'Nivel 4: Modo Valiente (18+)', desc: 'Piquitos, llamadas telefónicas, retos extremos.' }
+                      ].map(item => (
+                        <label key={item.level} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', fontSize: '0.85rem', cursor: 'pointer' }}>
+                          <input 
+                            type="checkbox"
+                            checked={ocaLevels.includes(item.level)}
+                            onChange={(e) => {
+                              if (e.target.checked) setOcaLevels(prev => [...prev, item.level]);
+                              else {
+                                if (ocaLevels.length > 1) setOcaLevels(prev => prev.filter(l => l !== item.level));
+                                else alert("Debes dejar al menos 1 nivel seleccionado.");
+                              }
+                            }}
+                            style={{ accentColor: 'var(--color-primary)', marginTop: '2px' }}
+                          />
+                          <div>
+                            <div style={{ fontWeight: 600 }}>{item.name}</div>
+                            <div style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>{item.desc}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                    <label style={{ fontSize: '0.85rem' }}>Castigo por arrugar:</label>
+                    <select 
+                      value={ocaPenaltyType} 
+                      onChange={e => setOcaPenaltyType(e.target.value as any)}
+                      className={styles.input}
+                      style={{ padding: '0.4rem 0.6rem', borderRadius: '4px', background: 'var(--color-surface)', color: 'white', border: '1px solid var(--color-border)' }}
+                    >
+                      <option value="fondo_blanco">Fondo Blanco (Seco)</option>
+                      <option value="cinco_sorbos">5 Sorbos Grandes</option>
+                    </select>
+                  </div>
                 </div>
               )}
 

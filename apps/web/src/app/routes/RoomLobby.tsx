@@ -129,18 +129,28 @@ export default function RoomLobby() {
 
         {isHost && (
           <section className={styles.hostSection}>
-            <button 
-              className={styles.buttonPrimary} 
-              disabled={isStarting || room.state.players?.length < 3}
-              onClick={handleStartGame}
-            >
-              {isStarting ? 'Iniciando...' : 'Iniciar Juego'}
-            </button>
-            {room.state.players?.length < 3 && (
-              <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
-                Se necesitan al menos 3 jugadores para empezar.
-              </p>
-            )}
+            {(() => {
+              const gameId = room.game_id || room.state.gameId;
+              const minPlayers = gameId === 'hora-del-nache' ? 3 : 2;
+              const notEnoughPlayers = (room.state.players?.length || 0) < minPlayers;
+
+              return (
+                <>
+                  <button 
+                    className={styles.buttonPrimary} 
+                    disabled={isStarting || notEnoughPlayers}
+                    onClick={handleStartGame}
+                  >
+                    {isStarting ? 'Iniciando...' : 'Iniciar Juego'}
+                  </button>
+                  {notEnoughPlayers && (
+                    <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
+                      Se necesitan al menos {minPlayers} jugadores para empezar.
+                    </p>
+                  )}
+                </>
+              );
+            })()}
           </section>
         )}
       </main>

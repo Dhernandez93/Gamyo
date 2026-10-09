@@ -1,6 +1,6 @@
-import { HdnSettings } from '../games/hora-del-nache/types.ts';
 import { horaDelNache, HDN_GAME_ID } from '../games/hora-del-nache/reducer.ts';
 import { cuartoRey, CUARTO_REY_ID } from '../games/cuarto-rey/reducer.ts';
+import { laOcaCuraguilla, OCA_GAME_ID } from '../games/la-oca-curaguilla/reducer.ts';
 
 export interface GameEngine {
   id: string;
@@ -18,5 +18,10 @@ export const gameRegistry: Record<string, GameEngine> = {
     id: CUARTO_REY_ID,
     reduce: cuartoRey.reduce,
     setup: cuartoRey.setup
+  },
+  [OCA_GAME_ID]: {
+    id: OCA_GAME_ID,
+    reduce: laOcaCuraguilla.reduce,
+    setup: laOcaCuraguilla.setup
   }
 };
